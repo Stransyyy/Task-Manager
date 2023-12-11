@@ -17,93 +17,94 @@ type Task struct {
 }
 
 // NewTask creates a new Task instance with the provided title, description, and due date
-func NewTask(title, description string, dueDate time.Time) *Task {
+func NewTask(title, description string, dueDate time.Time) (*Task, error) {
+
+	if title == "" {
+		err := fmt.Errorf("Title cannot be empty. Task not added.")
+		return nil, err
+	}
+
 	return &Task{
 		Title:       title,
 		Description: description,
 		DueDate:     dueDate,
 		Completed:   false,
-	}
+	}, nil
 }
 
-func newTaskFromUserInput() *Task {
+// NewTaskFromUserInput creates a new Task instance with the provided title, description, and due date
+func newTaskFromUserInput() (*Task, error) {
+
 	fmt.Println("Enter the title of the task: ")
-	title := readInput()
+	title := readInput("Title: ")
+
+	if title == "" {
+		return nil, fmt.Errorf("Title cannot be empty. Task not added.")
+	}
 
 	fmt.Println("Enter the description of the task: ")
-	description := readInput()
+	description := readInput("Description: ")
 
 	fmt.Println("Enter the due date of the task (YYYY-MM-DD): ")
-	dueDateString := readInput()
+	dueDateString := readInput("Due Date: ")
 	dueDate, err := time.Parse("2006-01-02", dueDateString)
 	if err != nil {
 		fmt.Println("Invalid date format. Task not added.")
-		return nil
+		return nil, err
 	}
 
-	return NewTask(title, description, dueDate)
+	fmt.Printf("Task added successfully!\n\n")
+
+	task, err := NewTask(title, description, dueDate)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return task, nil
 }
 
-func readInput() string {
+// view_tasks will display all the tasks
+func view_tasks(tasks []*Task) string {
+	if len(tasks) == 0 {
+		return "\nNo tasks to display\n\n"
+	}
+
+	result := "\nYour tasks: \n"
+	for _, task := range tasks {
+		result += fmt.Sprintf("ID: %d\nTitle: %s\nDescription: %s\nDue Date: %s\nCompleted: %t\n", task.ID, task.Title, task.Description, task.DueDate.Format("2006-01-02"), task.Completed)
+	}
+	return result
+}
+
+// mark_completed will mark whatever task the user chooses as completed
+func mark_completed() {
+
+}
+
+// edit_task will edit whatever task the user chooses
+func edit_task() {
+
+}
+
+// delete_task will delete whatever task the user chooses
+func delete_task() {
+
+}
+
+// Scans for the user input and returns it
+func readInput(prompt string) string {
+	fmt.Print(prompt)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	return scanner.Text()
 }
 
-// This function will create a new task and add it to the database
-func new_task(title, description, due_date string) {
-
-	fmt.Println("Enter the title of the task: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	title = scanner.Text()
-
-	fmt.Println("Enter the description of the task: ")
-	scanner.Scan()
-	description = scanner.Text()
-
-	fmt.Println("Enter the due date of the task: ")
-	scanner.Scan()
-	due_date = scanner.Text()
-
-	fmt.Println("Task added successfully!")
-
-}
-
-func edit_task() {
-
-}
-
-func delete_task() {
-
-}
-
-func mark_completed() {
-
-}
-
-func view_tasks(tasks []Task) {
-
-	if len(tasks) == 0 {
-		fmt.Println("No tasks to display")
-		return
-	}
-
-	fmt.Println("Your tasks: ")
-	for _, task := range tasks {
-
-		fmt.Printf("ID: %d\nTitle: %s\nDescription: %s\nDue Date: %s\nCompleted: %t\n", task.ID, task.Title, task.Description, task.DueDate.Format("2006-01-02"), task.Completed)
-	}
-}
-
-func task_manager() {
-
-}
-
 // This function will be the main function for the task manager
-
-func main() {
+func Task_option() {
 	scanner := bufio.NewScanner(os.Stdin)
+	var tasks []*Task
+	var taskIDCounter int
 
 	for {
 		displayed()
@@ -114,22 +115,35 @@ func main() {
 
 		switch choice {
 		case "1":
-			fmt.Println("You chose Option 1")
-			// Add functionality for Option 1 here
+			fmt.Println("Add task")
+
+			task, err := newTaskFromUserInput()
+
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			if task != nil {
+				task.ID = taskIDCounter
+				taskIDCounter++
+				tasks = append(tasks, task)
+				fmt.Println("Task added successfully!")
+			}
+
 		case "2":
-			fmt.Println("You chose Option 2")
-			// Add functionality for Option 2 here
+			fmt.Println(view_tasks(tasks))
 		case "3":
-			fmt.Println("You chose Option 3")
+			fmt.Println("Mark task as completed")
 			// Add functionality for Option 3 here
 		case "4":
-			fmt.Println("You chose Option 4")
+			fmt.Println("Delete task")
 			// Add functionality for Option 4 here
 		case "5":
-			fmt.Println("You chose Option 5")
+			fmt.Println("Edit task")
 			// Add functionality for Option 5 here
 		case "q":
-			fmt.Println("Exiting the scanner. Goodbye!")
+			fmt.Println("Exit task manager")
 			return
 		default:
 			fmt.Println("Invalid choice. Please enter a number between 1 and 5 or 'q' to quit.")
