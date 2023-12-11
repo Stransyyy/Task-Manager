@@ -4,10 +4,69 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 )
 
+// Task represents an individual task
+type Task struct {
+	ID          int       // Unique identifier for the task
+	Title       string    // Title of the task
+	Description string    // Description of the task
+	DueDate     time.Time // Due date of the task
+	Completed   bool      // Indicates whether the task is completed
+}
+
+// NewTask creates a new Task instance with the provided title, description, and due date
+func NewTask(title, description string, dueDate time.Time) *Task {
+	return &Task{
+		Title:       title,
+		Description: description,
+		DueDate:     dueDate,
+		Completed:   false,
+	}
+}
+
+func newTaskFromUserInput() *Task {
+	fmt.Println("Enter the title of the task: ")
+	title := readInput()
+
+	fmt.Println("Enter the description of the task: ")
+	description := readInput()
+
+	fmt.Println("Enter the due date of the task (YYYY-MM-DD): ")
+	dueDateString := readInput()
+	dueDate, err := time.Parse("2006-01-02", dueDateString)
+	if err != nil {
+		fmt.Println("Invalid date format. Task not added.")
+		return nil
+	}
+
+	return NewTask(title, description, dueDate)
+}
+
+func readInput() string {
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	return scanner.Text()
+}
+
 // This function will create a new task and add it to the database
-func new_task() {
+func new_task(title, description, due_date string) {
+
+	fmt.Println("Enter the title of the task: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	title = scanner.Text()
+
+	fmt.Println("Enter the description of the task: ")
+	scanner.Scan()
+	description = scanner.Text()
+
+	fmt.Println("Enter the due date of the task: ")
+	scanner.Scan()
+	due_date = scanner.Text()
+
+	fmt.Println("Task added successfully!")
 
 }
 
@@ -23,8 +82,18 @@ func mark_completed() {
 
 }
 
-func view_tasks() {
+func view_tasks(tasks []Task) {
 
+	if len(tasks) == 0 {
+		fmt.Println("No tasks to display")
+		return
+	}
+
+	fmt.Println("Your tasks: ")
+	for _, task := range tasks {
+
+		fmt.Printf("ID: %d\nTitle: %s\nDescription: %s\nDue Date: %s\nCompleted: %t\n", task.ID, task.Title, task.Description, task.DueDate.Format("2006-01-02"), task.Completed)
+	}
 }
 
 func task_manager() {
@@ -37,7 +106,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		printMenu()
+		displayed()
 
 		fmt.Print("Enter your choice (1-5): ")
 		scanner.Scan()
@@ -68,14 +137,14 @@ func main() {
 	}
 }
 
-func printMenu() {
-	fmt.Println("Options:")
-	fmt.Println("1. Option 1")
-	fmt.Println("2. Option 2")
-	fmt.Println("3. Option 3")
-	fmt.Println("4. Option 4")
-	fmt.Println("5. Option 5")
-	fmt.Println("q. Quit")
+func displayed() {
+	fmt.Println("Task manager")
+	fmt.Println("1. Add task")
+	fmt.Println("2. View tasks")
+	fmt.Println("3. Mark task as completed")
+	fmt.Println("4. Delete task")
+	fmt.Println("5. Edit task")
+	fmt.Println("q. Quit / Exit")
 }
 
 /*
