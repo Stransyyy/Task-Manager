@@ -95,8 +95,35 @@ func mark_completed(tasks []*Task, taskID int) error {
 }
 
 // edit_task will edit whatever task the user chooses
-func edit_task() {
+func edit_task(tasks []*Task, taskID int) {
 
+	for _, task := range tasks {
+		if task.ID == taskID {
+			fmt.Printf("Insert the task Id you want to edit: %d\n", taskID)
+
+			fmt.Print("\nEnter the new title of the task\n")
+			newTitle := readInput("Title: ")
+
+			fmt.Print("Enter the new description of the task: ")
+			newDescription := readInput("Description: ")
+
+			fmt.Print("Enter the new due date of the task (YYYY-MM-DD): ")
+			newDueDateString := readInput("Due Date: ")
+			newDueDate, err := time.Parse("2006-01-02", newDueDateString)
+			if err != nil {
+				fmt.Println("Invalid date format. Task not edited.")
+				return
+			}
+
+			task.Title = newTitle
+			task.Description = newDescription
+			task.DueDate = newDueDate
+
+			fmt.Printf("Task with ID %d edited successfully. \n", taskID)
+			return
+		}
+	}
+	fmt.Printf("Task with ID %d not found. \n", taskID)
 }
 
 // delete_task will delete whatever task the user chooses
@@ -179,7 +206,15 @@ func Task_option() {
 			// Add functionality for Option 4 here
 		case "5":
 			fmt.Println("Edit task")
-			// Add functionality for Option 5 here
+
+			fmt.Println("Edit task")
+			taskID, err := readTaskID("Enter the ID of the task to edit: ")
+			if err != nil {
+				fmt.Println("Error editing task:", err)
+				return
+			}
+			edit_task(tasks, taskID)
+
 		case "q":
 			fmt.Println("Exit task manager")
 			return
