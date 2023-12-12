@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -69,7 +70,6 @@ func view_tasks(tasks []*Task) string {
 	if len(tasks) == 0 {
 		return "\nNo tasks to display\n\n"
 	}
-
 	result := "\nYour tasks: \n"
 	for _, task := range tasks {
 		result += fmt.Sprintf("ID: %d\nTitle: %s\nDescription: %s\nDue Date: %s\nCompleted: %t\n", task.ID, task.Title, task.Description, task.DueDate.Format("2006-01-02"), task.Completed)
@@ -78,8 +78,20 @@ func view_tasks(tasks []*Task) string {
 }
 
 // mark_completed will mark whatever task the user chooses as completed
-func mark_completed() {
+func mark_completed(tasks []*Task, taskID int) error {
 
+	for _, task := range tasks {
+		if task.ID == taskID {
+			if task.Completed {
+				fmt.Printf("Task marked as completed!\n\n")
+			} else {
+				task.Completed = true
+				fmt.Printf("Task ID %d already marked as completed!", taskID)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("Task ID %d not found", taskID)
 }
 
 // edit_task will edit whatever task the user chooses
@@ -90,6 +102,18 @@ func edit_task() {
 // delete_task will delete whatever task the user chooses
 func delete_task() {
 
+}
+
+func readTaskID(prompt string) (int, error) {
+	fmt.Println(prompt)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	taskID, err := strconv.Atoi((scanner.Text()))
+	if err != nil {
+		fmt.Println("Error converting string into int: ", err)
+		return -1, err
+	}
+	return taskID, nil
 }
 
 // Scans for the user input and returns it
@@ -115,6 +139,7 @@ func Task_option() {
 
 		switch choice {
 		case "1":
+
 			fmt.Println("Add task")
 
 			task, err := newTaskFromUserInput()
@@ -128,14 +153,27 @@ func Task_option() {
 				task.ID = taskIDCounter
 				taskIDCounter++
 				tasks = append(tasks, task)
-				fmt.Println("Task added successfully!")
 			}
 
 		case "2":
+
 			fmt.Println(view_tasks(tasks))
+
 		case "3":
+
 			fmt.Println("Mark task as completed")
-			// Add functionality for Option 3 here
+			fmt.Println("Insert the number of the task you want to mark as completed")
+			taskID, err := readTaskID("ID: ")
+			if err != nil {
+				fmt.Println("Error reading the task: ", err)
+				continue
+			}
+			err = mark_completed(tasks, taskID)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
 		case "4":
 			fmt.Println("Delete task")
 			// Add functionality for Option 4 here
