@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+type TaskStore interface {
+	GetAll() ([]*Task, error)
+	Store(*Task) error
+	MarkCompleted(int) error
+	Delete(int) error
+	Get(int) (*Task, error)
+}
+
 // Task represents an individual task
 type Task struct {
 	ID          int       // Unique identifier for the task
@@ -65,8 +73,18 @@ func newTaskFromUserInput() (*Task, error) {
 	return task, nil
 }
 
+type Tasks struct {
+	Storage TaskStore
+}
+
 // view_tasks will display all the tasks
-func view_tasks(tasks []*Task) string {
+func (tk Tasks) View() string {
+	tasks, err := tk.Storage.GetAll()
+
+	if err != nil {
+		return "Error: could not get tasks\n\n"
+	}
+
 	if len(tasks) == 0 {
 		return "\nNo tasks to display\n\n"
 	}
@@ -78,57 +96,48 @@ func view_tasks(tasks []*Task) string {
 }
 
 // mark_completed will mark whatever task the user chooses as completed
-func mark_completed(tasks []*Task, taskID int) error {
-
-	for _, task := range tasks {
-		if task.ID == taskID {
-			if task.Completed {
-				fmt.Printf("Task marked as completed!\n\n")
-			} else {
-				task.Completed = true
-				fmt.Printf("Task ID %d already marked as completed!", taskID)
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("Task ID %d not found", taskID)
+func (tk Tasks) MarkCompleted(taskID int) error {
+	return tk.Storage.MarkCompleted(taskID)
 }
 
 // edit_task will edit whatever task the user chooses
-func edit_task(tasks []*Task, taskID int) {
+func (tk Tasks) Edit_task(taskID int) {
 
-	for _, task := range tasks {
-		if task.ID == taskID {
-			fmt.Printf("Insert the task Id you want to edit: %d\n", taskID)
+	task, _ := tk.Storage.Get(taskID)
 
-			fmt.Print("\nEnter the new title of the task\n")
-			newTitle := readInput("Title: ")
+	// for _, task := range tasks {
+	// 	if task.ID == taskID {
 
-			fmt.Print("Enter the new description of the task: ")
-			newDescription := readInput("Description: ")
+	fmt.Print("\nEnter the new title of the task\n")
+	newTitle := readInput("Title: ")
 
-			fmt.Print("Enter the new due date of the task (YYYY-MM-DD): ")
-			newDueDateString := readInput("Due Date: ")
-			newDueDate, err := time.Parse("2006-01-02", newDueDateString)
-			if err != nil {
-				fmt.Println("Invalid date format. Task not edited.")
-				return
-			}
+	fmt.Print("Enter the new description of the task: ")
+	newDescription := readInput("Description: ")
 
-			task.Title = newTitle
-			task.Description = newDescription
-			task.DueDate = newDueDate
-
-			fmt.Printf("Task with ID %d edited successfully. \n", taskID)
-			return
-		}
+	fmt.Print("Enter the new due date of the task (YYYY-MM-DD): ")
+	newDueDateString := readInput("Due Date: ")
+	newDueDate, err := time.Parse("2006-01-02", newDueDateString)
+	if err != nil {
+		fmt.Println("Invalid date format. Task not edited.")
+		return
 	}
-	fmt.Printf("Task with ID %d not found. \n", taskID)
+
+	task.Title = newTitle
+	task.Description = newDescription
+	task.DueDate = newDueDate
+
+	tk.Storage.Store(task)
+
+	fmt.Printf("Task with ID %d edited successfully. \n", taskID)
+	return
+
 }
 
-// delete_task will delete whatever task the user chooses
-func delete_task() {
+// fmt.Printf("Task with ID %d not found. \n", taskID)
 
+// delete_task will delete whatever task the user chooses
+func (tk Tasks) Delete_task(id int) error {
+	return tk.Storage.Delete(id)
 }
 
 func readTaskID(prompt string) (int, error) {
@@ -152,9 +161,8 @@ func readInput(prompt string) string {
 }
 
 // This function will be the main function for the task manager
-func Task_option() {
+func (tk Tasks) Run() {
 	scanner := bufio.NewScanner(os.Stdin)
-	var tasks []*Task
 	var taskIDCounter int
 
 	for {
@@ -179,12 +187,12 @@ func Task_option() {
 			if task != nil {
 				task.ID = taskIDCounter
 				taskIDCounter++
-				tasks = append(tasks, task)
+				tk.Storage.Store(task)
 			}
 
 		case "2":
 
-			fmt.Println(view_tasks(tasks))
+			fmt.Println(tk.View())
 
 		case "3":
 
@@ -195,7 +203,7 @@ func Task_option() {
 				fmt.Println("Error reading the task: ", err)
 				continue
 			}
-			err = mark_completed(tasks, taskID)
+			err = tk.MarkCompleted(taskID)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -213,7 +221,8 @@ func Task_option() {
 				fmt.Println("Error editing task:", err)
 				return
 			}
-			edit_task(tasks, taskID)
+
+			tk.Edit_task(taskID)
 
 		case "q":
 			fmt.Println("Exit task manager")
