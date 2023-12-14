@@ -225,7 +225,7 @@ func (tk Tasks) Run() {
 			tk.Edit_task(taskID)
 
 		case "q":
-			fmt.Println("Exit task manager")
+			fmt.Println("Exiting task manager...")
 			return
 		default:
 			fmt.Println("Invalid choice. Please enter a number between 1 and 5 or 'q' to quit.")

@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
 	_ "github.com/go-sql-driver/mysql"
@@ -13,7 +15,7 @@ type Storage struct {
 }
 
 func (db Storage) GetAll() ([]*task.Task, error) {
-	rows, err := db.db.Query("SELECT id, title, description, due_date, completed FROM tasks")
+	rows, err := db.db.Query("SELECT taskID, title, description, due_date, completed FROM tasks")
 	if err != nil {
 		return nil, err
 	}
@@ -34,23 +36,23 @@ func (db Storage) GetAll() ([]*task.Task, error) {
 }
 
 func (db Storage) Store(t *task.Task) error {
-	_, err := db.db.Exec("INSERT INTO tasks (title, description, due_date, completed) VALUES (?, ?, ?, ?)", t.Title, t.Description, t.DueDate, t.Completed)
+	_, err := db.db.Exec("INSERT INTO storage (title, description, due_date, completed) VALUES (?, ?, ?, ?)", t.Title, t.Description, t.DueDate, t.Completed)
 	return err
 }
 
 func (db Storage) MarkCompleted(id int) error {
-	_, err := db.db.Exec("UPDATE tasks SET completed = true WHERE id = ?", id)
+	_, err := db.db.Exec("UPDATE storage SET completed = true WHERE id = ?", id)
 	return err
 }
 
 func (db Storage) Delete(id int) error {
-	_, err := db.db.Exec("DELETE FROM tasks WHERE id = ?", id)
+	_, err := db.db.Exec("DELETE FROM storage WHERE id = ?", id)
 	return err
 }
 
 func (db Storage) Get(id int) (*task.Task, error) {
 	var t task.Task
-	err := db.db.QueryRow("SELECT id, title, description, due_date, completed FROM tasks WHERE id = ?", id).Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
+	err := db.db.QueryRow("SELECT taskID, title, description, due_date, completed FROM storage WHERE id = ?", id).Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +60,10 @@ func (db Storage) Get(id int) (*task.Task, error) {
 }
 
 func (d *Storage) Open() error {
-	db, err := sql.Open("mysql", "root:password@tcp(")
+
+	connectionString := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s", os.Getenv("Username"), os.Getenv("Password"), os.Getenv("Database"))
+
+	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
 		return err
 	}
@@ -69,6 +74,8 @@ func (d *Storage) Open() error {
 	}
 
 	d.db = db
+
+	fmt.Print("\nConnected to database successfully\n\n")
 
 	return nil
 }
