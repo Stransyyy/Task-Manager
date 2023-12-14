@@ -82,16 +82,19 @@ func (tk Tasks) View() string {
 	tasks, err := tk.Storage.GetAll()
 
 	if err != nil {
-		return "Error: could not get tasks\n\n"
+		return fmt.Sprintf("Error getting tasks: %s", err)
 	}
 
 	if len(tasks) == 0 {
-		return "\nNo tasks to display\n\n"
+		return "\nNo tasks to display\n"
 	}
+
 	result := "\nYour tasks: \n"
+
 	for _, task := range tasks {
 		result += fmt.Sprintf("ID: %d\nTitle: %s\nDescription: %s\nDue Date: %s\nCompleted: %t\n", task.ID, task.Title, task.Description, task.DueDate.Format("2006-01-02"), task.Completed)
 	}
+
 	return result
 }
 
@@ -163,7 +166,6 @@ func readInput(prompt string) string {
 // This function will be the main function for the task manager
 func (tk Tasks) Run() {
 	scanner := bufio.NewScanner(os.Stdin)
-	var taskIDCounter int
 
 	for {
 		displayed()
@@ -185,9 +187,11 @@ func (tk Tasks) Run() {
 			}
 
 			if task != nil {
-				task.ID = taskIDCounter
-				taskIDCounter++
-				tk.Storage.Store(task)
+				err := tk.Storage.Store(task)
+				if err != nil {
+					fmt.Println("Error storing task: ", err)
+					continue
+				}
 			}
 
 		case "2":

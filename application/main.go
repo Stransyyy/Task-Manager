@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	db "github.com/Stransyyy/Task-Manager/mysql"
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
@@ -72,6 +73,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Print("\nConnected to database successfully\n\n")
 
 	defer dbStorage.Close()
 

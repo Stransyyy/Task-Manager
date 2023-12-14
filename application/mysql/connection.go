@@ -15,7 +15,7 @@ type Storage struct {
 }
 
 func (db Storage) GetAll() ([]*task.Task, error) {
-	rows, err := db.db.Query("SELECT taskID, title, description, due_date, completed FROM tasks")
+	rows, err := db.db.Query("SELECT taskID, title, description, due_date, completed FROM storage")
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (db Storage) Get(id int) (*task.Task, error) {
 
 func (d *Storage) Open() error {
 
-	connectionString := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s", os.Getenv("Username"), os.Getenv("Password"), os.Getenv("Database"))
+	connectionString := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s?parseTime=true", os.Getenv("Username"), os.Getenv("Password"), os.Getenv("Database"))
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -74,8 +74,6 @@ func (d *Storage) Open() error {
 	}
 
 	d.db = db
-
-	fmt.Print("\nConnected to database successfully\n\n")
 
 	return nil
 }
