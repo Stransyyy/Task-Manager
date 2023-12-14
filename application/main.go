@@ -34,7 +34,6 @@ func (s sliceStorage) MarkCompleted(id int) error {
 			return nil
 		}
 	}
-
 	return errors.New("could not find task with that id")
 }
 
@@ -44,7 +43,6 @@ func (s sliceStorage) Get(id int) (*task.Task, error) {
 			return task, nil
 		}
 	}
-
 	return &task.Task{}, errors.New("could not find task with that id")
 }
 
@@ -62,24 +60,48 @@ func (s sliceStorage) Delete(id int) error {
 	return nil
 }
 
-func (db dbStorage) GetAll() (*sql.Tx, error) {
-	return db.DB, nil
+func (db dbStorage) GetAll() ([]*task.Task, error) {
+	rows, err := db.DB.Query("SELECT id, title, description, due_date, completed FROM tasks")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*task.Task
+
+	for rows.Next() {
+		var t task.Task
+		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, &t)
+	}
+
+	return tasks, nil
 }
 
-func (s sliceStorage) Store(t *task.Task) error {
-	return nil
+func (db dbStorage) Store(t *task.Task) error {
+	_, err := db.DB.Exec("INSERT INTO tasks (title, description, due_date, completed) VALUES (?, ?, ?, ?)", t.Title, t.Description, t.DueDate, t.Completed)
+	return err
 }
 
-func (s sliceStorage) MarkCompleted(id int) error {
-
+func (db dbStorage) MarkCompleted(id int) error {
+	_, err := db.DB.Exec("UPDATE tasks SET completed = true WHERE id = ?", id)
+	return err
 }
 
-func (s sliceStorage) Delete(id int) error {
-
+func (db dbStorage) Delete(id int) error {
+	_, err := db.DB.Exec("DELETE FROM tasks WHERE id = ?", id)
+	return err
 }
 
-func (s sliceStorage) Get(id int) error {
-
+func (db dbStorage) Get(id int) (*task.Task, error) {
+	var t task.Task
+	err := db.DB.QueryRow("SELECT id, title, description, due_date, completed FROM tasks WHERE id = ?", id).Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
+	if err != nil {
+	}
+	return &t, nil
 }
 
 func main() {
