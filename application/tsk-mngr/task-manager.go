@@ -14,6 +14,7 @@ type TaskStore interface {
 	MarkCompleted(int) error
 	Delete(int) error
 	Get(int) (*Task, error)
+	Edit(*Task) error
 }
 
 // Task represents an individual task
@@ -104,13 +105,13 @@ func (tk Tasks) MarkCompleted(taskID int) error {
 }
 
 // edit_task will edit whatever task the user chooses
-func (tk Tasks) Edit_task(taskID int) {
+func (tk Tasks) Edit_task(taskID int) (*Task, error) {
+	existingTask, err := tk.Storage.Get(taskID)
+	if err != nil {
+		return nil, err
+	}
 
-	task, _ := tk.Storage.Get(taskID)
-
-	// for _, task := range tasks {
-	// 	if task.ID == taskID {
-
+	// Prompt the user for new values
 	fmt.Print("\nEnter the new title of the task\n")
 	newTitle := readInput("Title: ")
 
@@ -122,25 +123,35 @@ func (tk Tasks) Edit_task(taskID int) {
 	newDueDate, err := time.Parse("2006-01-02", newDueDateString)
 	if err != nil {
 		fmt.Println("Invalid date format. Task not edited.")
-		return
+		return nil, err
 	}
 
-	task.Title = newTitle
-	task.Description = newDescription
-	task.DueDate = newDueDate
+	// Update the existing task with new values
+	existingTask.Title = newTitle
+	existingTask.Description = newDescription
+	existingTask.DueDate = newDueDate
 
-	tk.Storage.Store(task)
+	// Update the task in the MySQL database
+	err = tk.Storage.Edit(existingTask)
+	if err != nil {
+		fmt.Println("Error updating task in the database: ", err)
+		return nil, err
+	}
 
 	fmt.Printf("Task with ID %d edited successfully. \n", taskID)
-	return
 
+	return existingTask, nil
 }
 
 // fmt.Printf("Task with ID %d not found. \n", taskID)
 
 // delete_task will delete whatever task the user chooses
 func (tk Tasks) Delete_task(id int) error {
-	return tk.Storage.Delete(id)
+	err := (tk.Storage.Delete(id))
+
+	fmt.Printf("Task with ID %d deleted successfully. \n\n", id)
+
+	return err
 }
 
 func readTaskID(prompt string) (int, error) {
@@ -180,7 +191,6 @@ func (tk Tasks) Run() {
 			fmt.Println("Add task")
 
 			task, err := newTaskFromUserInput()
-
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -201,38 +211,56 @@ func (tk Tasks) Run() {
 		case "3":
 
 			fmt.Println("Mark task as completed")
-			fmt.Println("Insert the number of the task you want to mark as completed")
+			fmt.Println("Insert the number ID of the task you want to mark as completed")
+
 			taskID, err := readTaskID("ID: ")
 			if err != nil {
 				fmt.Println("Error reading the task: ", err)
 				continue
 			}
+
 			err = tk.MarkCompleted(taskID)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Error completing task: ", err)
 				continue
 			}
 
 		case "4":
-			fmt.Println("Delete task")
-			// Add functionality for Option 4 here
+			fmt.Println("\nDelete task using the ID")
+
+			taskID, err := readTaskID("ID: ")
+			if err != nil {
+				fmt.Println("Error deleting the task: ", err)
+				continue
+			}
+
+			err = tk.Delete_task(taskID)
+
 		case "5":
-			fmt.Println("Edit task")
 
 			fmt.Println("Edit task")
 			taskID, err := readTaskID("Enter the ID of the task to edit: ")
+			if err != nil {
+				fmt.Println("Error reading task:", err)
+				return
+			}
+
+			editedTask, err := tk.Edit_task(taskID)
 			if err != nil {
 				fmt.Println("Error editing task:", err)
 				return
 			}
 
-			tk.Edit_task(taskID)
+			if editedTask != nil {
+
+			}
 
 		case "q":
 			fmt.Println("Exiting task manager...")
 			return
 		default:
 			fmt.Println("Invalid choice. Please enter a number between 1 and 5 or 'q' to quit.")
+			return
 		}
 	}
 }

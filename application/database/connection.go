@@ -36,27 +36,33 @@ func (db Storage) GetAll() ([]*task.Task, error) {
 }
 
 func (db Storage) Store(t *task.Task) error {
+
 	_, err := db.db.Exec("INSERT INTO storage (title, description, due_date, completed) VALUES (?, ?, ?, ?)", t.Title, t.Description, t.DueDate, t.Completed)
 	return err
 }
 
 func (db Storage) MarkCompleted(id int) error {
-	_, err := db.db.Exec("UPDATE storage SET completed = true WHERE id = ?", id)
+	_, err := db.db.Exec("UPDATE `storage` SET completed = true WHERE taskID = ?", id)
 	return err
 }
 
 func (db Storage) Delete(id int) error {
-	_, err := db.db.Exec("DELETE FROM storage WHERE id = ?", id)
+	_, err := db.db.Exec("DELETE FROM storage WHERE taskID = ?", id)
 	return err
 }
 
 func (db Storage) Get(id int) (*task.Task, error) {
 	var t task.Task
-	err := db.db.QueryRow("SELECT taskID, title, description, due_date, completed FROM storage WHERE id = ?", id).Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
+	err := db.db.QueryRow("SELECT taskID, title, description, due_date, completed FROM storage WHERE taskID = ?", id).Scan(&t.ID, &t.Title, &t.Description, &t.DueDate, &t.Completed)
 	if err != nil {
 		return nil, err
 	}
 	return &t, nil
+}
+
+func (db Storage) Edit(t *task.Task) error {
+	_, err := db.db.Exec("UPDATE `storage` SET title=?, description=?, due_date=?, completed=? WHERE taskID=?", t.Title, t.Description, t.DueDate, t.Completed, t.ID)
+	return err
 }
 
 func (d *Storage) Open() error {

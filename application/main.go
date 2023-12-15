@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	db "github.com/Stransyyy/Task-Manager/mysql"
+	db "github.com/Stransyyy/Task-Manager/database"
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
 	"github.com/joho/godotenv"
 )
@@ -83,4 +83,5 @@ func main() {
 	}
 
 	taskManager.Run()
+
 }
