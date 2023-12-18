@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	db "github.com/Stransyyy/Task-Manager/database"
+	dynamo "github.com/Stransyyy/Task-Manager/database2"
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
 	"github.com/joho/godotenv"
 )
@@ -83,5 +84,13 @@ func main() {
 	}
 
 	taskManager.Run()
+
+	// DynamoDB storage
+	dynamoStorage := dynamo.NewDynamo()
+
+	err = dynamoStorage.Open(3)
+	if err != nil {
+		panic(err)
+	}
 
 }
