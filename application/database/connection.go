@@ -37,7 +37,7 @@ func (db Storage) GetAll() ([]*task.Task, error) {
 
 func (db Storage) Store(t *task.Task) error {
 
-	_, err := db.db.Exec("INSERT INTO storage (title, description, due_date, completed) VALUES (?, ?, ?, ?)", t.Title, t.Description, t.DueDate, t.Completed)
+	_, err := db.db.Exec("INSERT INTO storage (taskID, title, description, due_date, completed) VALUES (?, ?, ?, ?, ?)", t.ID, t.Title, t.Description, t.DueDate, t.Completed)
 	return err
 }
 

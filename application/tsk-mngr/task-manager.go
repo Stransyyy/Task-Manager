@@ -26,16 +26,18 @@ type Task struct {
 	Completed   bool      // Indicates whether the task is completed
 }
 
-func UserInputTaskID(prompt string) (int, error) {
+func readUserTaskID(prompt string) (string, error) {
 	fmt.Println(prompt)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
-	TaskID, err := strconv.Atoi((scanner.Text()))
-	if err != nil {
-		return -1, err
+	taskID := scanner.Text()
+
+	// Check if the taskID is empty
+	if taskID == "" {
+		return "", fmt.Errorf("Task ID cannot be empty")
 	}
 
-	return TaskID, nil
+	return taskID, nil
 }
 
 // NewTask creates a new Task instance with the provided title, description, and due date
@@ -203,6 +205,19 @@ func (tk Tasks) Run() {
 
 			fmt.Println("Add task")
 
+			taskIDstr, err := readUserTaskID("Enter the ID of the task: ")
+
+			if err != nil {
+				fmt.Println("Error reading task ID provided: ", err)
+				continue
+			}
+
+			taskID, err := strconv.Atoi(taskIDstr)
+			if err != nil {
+				fmt.Println("Error converting string to int: ", err)
+				continue
+			}
+
 			task, err := newTaskFromUserInput()
 			if err != nil {
 				fmt.Println(err)
@@ -210,6 +225,9 @@ func (tk Tasks) Run() {
 			}
 
 			if task != nil {
+
+				task.ID = taskID
+
 				err := tk.Storage.Store(task)
 				if err != nil {
 					fmt.Println("Error storing task: ", err)
