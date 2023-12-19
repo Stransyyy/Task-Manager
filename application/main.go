@@ -94,7 +94,7 @@ func main() {
 
 	//-----------------------------------------------------------------------------------------------------
 	taskManager := task.Tasks{
-		Storage: dbStorage,
+		Storage: dynamoStorage,
 	}
 
 	taskManager.Run()

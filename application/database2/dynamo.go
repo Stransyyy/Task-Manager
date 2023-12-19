@@ -72,7 +72,14 @@ func (db *Dynamo) Store(t *task.Task) error {
 func (db *Dynamo) MarkCompleted(id int) error {
 	taskPK, taskSK := taskKey(id)
 
-	err := db.table.Update(pk, taskPK).Range(sk, taskSK).Set("completed", true).Run()
+	tx := db.db.WriteTx()
+
+	tx.Update(db.table.Update(pk, taskPK).Range(sk, taskSK).Set("Completed", true))
+
+	tx.Update(db.table.Update(pk, allTasksPK).Range(sk, taskPK).Set("Completed", true))
+
+	err := tx.Run()
+
 	if err != nil {
 		return err
 	}
@@ -83,7 +90,13 @@ func (db *Dynamo) MarkCompleted(id int) error {
 func (db *Dynamo) Delete(id int) error {
 	taskPK, taskSK := taskKey(id)
 
-	err := db.table.Delete(pk, taskPK).Range(sk, taskSK).Run()
+	tx := db.db.WriteTx()
+
+	tx.Delete(db.table.Delete(pk, taskPK).Range(sk, taskSK))
+
+	tx.Delete(db.table.Delete(pk, allTasksPK).Range(sk, taskPK))
+
+	err := tx.Run()
 
 	if err != nil {
 		return err
