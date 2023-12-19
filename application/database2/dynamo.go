@@ -1,32 +1,37 @@
 package dynamo
 
 import (
+	"fmt"
+
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 )
 
+const (
+	pk         = "PK"
+	sk         = "SK"
+	allTasksPK = "AllTasks"
+)
+
 type Dynamo struct {
 	db      *dynamo.DB
+	table   dynamo.Table
 	retries int
-}
-
-type Task struct {
-	id    string
-	title string
 }
 
 type dbTaskItem struct {
 	PK string `dynamo:"PK"`
 	SK string `dynamo:"SK"`
+	task.Task
 }
 
-var tasks []*Task
+func (db *Dynamo) GetAll() ([]*task.Task, error) {
 
-func (db Dynamo) GetAll() ([]*Task, error) {
+	var tasks []*task.Task
 
-	err := db.db.Table("tasks").Get("PK", "TASK").All(&tasks)
+	err := db.table.Get(pk, allTasksPK).All(&tasks)
 	if err != nil {
 		return nil, err
 	}
@@ -34,12 +39,29 @@ func (db Dynamo) GetAll() ([]*Task, error) {
 	return tasks, nil
 }
 
-func (db Dynamo) Store(t *task.Task) error {
+func taskKey(id int) (string, string) {
+	return fmt.Sprintf("%d", id), "TASK"
+}
 
-	err := db.db.Table("tasks").Put(&dbTaskItem{
-		PK: "TASK",
-		SK: t.Title,
-	}).Run()
+func (db *Dynamo) Store(t *task.Task) error {
+	taskPK, taskSK := taskKey(t.ID)
+
+	tx := db.db.WriteTx()
+
+	tx.Put(db.table.Put(&dbTaskItem{
+		PK:   taskPK,
+		SK:   taskSK,
+		Task: *t,
+	}))
+
+	tx.Put(db.table.Put(&dbTaskItem{
+		PK:   allTasksPK,
+		SK:   taskPK,
+		Task: *t,
+	}))
+
+	err := tx.Run()
+
 	if err != nil {
 		return err
 	}
@@ -47,8 +69,10 @@ func (db Dynamo) Store(t *task.Task) error {
 	return nil
 }
 
-func (db Dynamo) MarkCompleted(id int) error {
-	err := db.db.Table("tasks").Update("PK", "TASK").Range("SK", "TASK").Set("completed", true).Run()
+func (db *Dynamo) MarkCompleted(id int) error {
+	taskPK, taskSK := taskKey(id)
+
+	err := db.table.Update(pk, taskPK).Range(sk, taskSK).Set("completed", true).Run()
 	if err != nil {
 		return err
 	}
@@ -56,41 +80,59 @@ func (db Dynamo) MarkCompleted(id int) error {
 	return nil
 }
 
-func (db Dynamo) Delete() error {
-	db.db.Table("tasks").Delete("PK", "TASK").Range("SK", "TASK").Run()
+func (db *Dynamo) Delete(id int) error {
+	taskPK, taskSK := taskKey(id)
+
+	err := db.table.Delete(pk, taskPK).Range(sk, taskSK).Run()
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (db Dynamo) Get(id string) (*task.Task, error) {
+func (db *Dynamo) Get(id int) (*task.Task, error) {
+
+	taskPK, taskSK := taskKey(id)
 
 	var result dbTaskItem
 
-	err := db.db.Table("tasks").Get("PK", "TASK").Range("SK", dynamo.Operator(id)).One(&result)
+	err := db.table.Get(pk, taskPK).Range(sk, dynamo.Equal, taskSK).One(&result)
 	if err != nil {
 		return nil, err
 	}
 
-	t := &task.Task{
-		Title: result.SK,
-	}
-
-	return t, err
+	return &result.Task, nil
 }
 
 func (db Dynamo) Edit(t *task.Task) error {
-	return nil
+	return db.Store(t)
 }
 
-func (db Dynamo) Open() error {
+func (db *Dynamo) Open(table, region string) error {
 
 	sess := session.Must(session.NewSession())
 	db.db = dynamo.New(sess, &aws.Config{
-		Region: aws.String("us-east-1"),
+		Region: aws.String(region),
 	})
+
+	db.table = db.db.Table(table)
 
 	return nil
 }
 
-func NewDynamo() *Dynamo {
-	return &Dynamo{}
+func (db *Dynamo) Close() error {
+
+	db.db = nil
+
+	db.table = dynamo.Table{}
+
+	return nil
+}
+
+func NewDynamo(retries int) *Dynamo {
+	return &Dynamo{
+		retries: retries,
+	}
 }

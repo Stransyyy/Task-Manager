@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	db "github.com/Stransyyy/Task-Manager/database"
 	dynamo "github.com/Stransyyy/Task-Manager/database2"
 	task "github.com/Stransyyy/Task-Manager/tsk-mngr"
 	"github.com/joho/godotenv"
@@ -68,29 +67,29 @@ func main() {
 
 	//myStorage := sliceStorage{}
 
-	dbStorage := db.New()
+	// dbStorage := db.New()
 
-	err := dbStorage.Open()
-	if err != nil {
-		panic(err)
-	}
+	// err := dbStorage.Open()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	fmt.Print("\nConnected to database successfully\n\n")
 
-	defer dbStorage.Close()
-
-	taskManager := task.Tasks{
-		Storage: dbStorage,
-	}
-
-	taskManager.Run()
+	//defer dbStorage.Close()
 
 	// DynamoDB storage
-	dynamoStorage := dynamo.NewDynamo()
+	dynamoStorage := dynamo.NewDynamo(3)
 
-	err = dynamoStorage.Open(3)
+	err := dynamoStorage.Open("tasks", "us-east-2")
 	if err != nil {
 		panic(err)
 	}
+
+	taskManager := task.Tasks{
+		Storage: dynamoStorage,
+	}
+
+	taskManager.Run()
 
 }

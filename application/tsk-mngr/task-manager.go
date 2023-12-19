@@ -26,8 +26,20 @@ type Task struct {
 	Completed   bool      // Indicates whether the task is completed
 }
 
+func UserInputTaskID(prompt string) (int, error) {
+	fmt.Println(prompt)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	TaskID, err := strconv.Atoi((scanner.Text()))
+	if err != nil {
+		return -1, err
+	}
+
+	return TaskID, nil
+}
+
 // NewTask creates a new Task instance with the provided title, description, and due date
-func NewTask(title, description string, dueDate time.Time) (*Task, error) {
+func NewTask(id int, title, description string, dueDate time.Time) (*Task, error) {
 
 	if title == "" {
 		err := fmt.Errorf("Title cannot be empty. Task not added.")
@@ -35,6 +47,7 @@ func NewTask(title, description string, dueDate time.Time) (*Task, error) {
 	}
 
 	return &Task{
+		ID:          id,
 		Title:       title,
 		Description: description,
 		DueDate:     dueDate,
@@ -65,7 +78,7 @@ func newTaskFromUserInput() (*Task, error) {
 
 	fmt.Printf("Task added successfully!\n\n")
 
-	task, err := NewTask(title, description, dueDate)
+	task, err := NewTask(0, title, description, dueDate)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
